@@ -26,5 +26,8 @@ class KitInput(BaseModel):
 class KitEdit(BaseModel):
  name:str=Field(min_length=2,max_length=100)
  note:str=Field(min_length=8,max_length=2000)
+class LinkInput(BaseModel):
+ left_job_id:int=Field(gt=0)
+ right_job_id:int=Field(gt=0)
 class RuleOutput(BaseModel):
  id:int;run_id:int;antecedent:list[str];consequent:list[str];support:float;confidence:float;lift:float;count:int

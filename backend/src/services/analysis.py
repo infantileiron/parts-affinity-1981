@@ -1,10 +1,13 @@
 import math,json,hashlib
 from itertools import combinations
-VERSION='apriori-max3-v1'
+VERSION='apriori-max3-v2-grouped'
+def checksum(rows):
+ return hashlib.sha256(json.dumps(rows,sort_keys=True,ensure_ascii=False).encode()).hexdigest()
 def mine(rows,min_support=.15,min_confidence=.6,min_lift=1):
+ # rows 为冻结事务：归组生效后每个故障事件组一条事务，组内用件取并集、每组只计一次
  transactions=[frozenset(r['parts']) for r in rows if r.get('parts')]
  n=len(transactions)
- if n<2:raise ValueError('至少需要2条含备件的有效维保作业')
+ if n<2:raise ValueError('至少需要2条含备件的有效故障事件事务')
  if not 0<min_support<=1 or not 0<min_confidence<=1 or min_lift<0:raise ValueError('无效阈值')
  minimum=math.ceil(n*min_support-1e-12);universe=sorted(set().union(*transactions))
  counts={};level=[]
@@ -28,4 +31,4 @@ def mine(rows,min_support=.15,min_confidence=.6,min_lift=1):
      rules.append({'signature':','.join(sorted(a))+'->'+','.join(sorted(b)),'antecedent':sorted(a),'consequent':sorted(b),'count':count,'support':support,'confidence':confidence,'lift':lift})
  rules.sort(key=lambda r:(-r['lift'],-r['confidence'],-r['support'],r['signature']))
  frequent=[{'items':sorted(k),'count':v,'support':v/n} for k,v in counts.items()]
- return dict(valid_jobs=n,excluded=len(rows)-n,minimum_count=minimum,frequent=frequent,rules=rules,version=VERSION,checksum=hashlib.sha256(json.dumps(rows,sort_keys=True,ensure_ascii=False).encode()).hexdigest(),method='Apriori最大项集长度3；每张有效作业为一个事务，重复备件去重；support=count(A∪B)/N；confidence=count(A∪B)/count(A)；lift=confidence/support(B)。关联不代表必须联换，需核对设备、兼容性与备件数量。')
+ return dict(valid_jobs=n,excluded=0,minimum_count=minimum,frequent=frequent,rules=rules,version=VERSION,method='Apriori最大项集长度3；故障事件归组后每个事件组为一个事务，组内用件取并集且每组只计一次，重复备件去重；support=count(A∪B)/N；confidence=count(A∪B)/count(A)；lift=confidence/support(B)。关联不代表必须联换，需核对设备、兼容性与备件数量。')
